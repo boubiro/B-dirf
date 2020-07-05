@@ -202,8 +202,8 @@ function banner(){
 ║╚═╝║─────╔╝╚╝║─║║─║║───║║─    ┌∩┐(◣_◢)┌∩┐$(sleep $NUMs)";printf "
 ╚═══╝─────╚═══╝─╚╝─╚╝───╚╝─\a${N}  (${GR}@Black-widow-z${N})$(sleep $NUMs)"
 }
-if [ $1 = $ZZZZ ];then Help;exit 1;fi
-if [ $Banner = "TRUE" ];then banner;fi
+if [ $1 = $ZZZZ ] 2>/dev/null;then Help;exit 1;fi
+if [ $Banner = "TRUE" ] 2>/dev/null;then banner;fi
 check_connection
 if [ $WL2 = "Yes" ];then
 	if [ $DEF = "No" ];then
