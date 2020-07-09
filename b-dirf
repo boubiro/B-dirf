@@ -31,7 +31,7 @@ if [ ${URL: -1} = "/" ] 2>/dev/null;then echo -n "";else URL=$URL"/";fi
 
 # check connection
 function check_connection(){
-	printf "\n(${R}Target${N})     : ${URL}"
+	printf "\n(${R}Target${N})     : ${URL}" 2>/dev/null
 	printf "\n(${R}Thread${N})     : ${THREAD}"
 	printf "\n(${R}Recursive${N})  : ${RECURSIVE}"
 	printf "\n(${R}Wordlist${N})   : ${WL2}"
@@ -175,7 +175,7 @@ for j in $@;do
 			for k in $(seq 0 2000);do if [ $T -eq $k ] 2>/dev/null;then TC="TRUE";break;fi;done		
 			if [ $TC = "TRUE" ] 2>/dev/null;then
 				if [ $T -le 2 ] 2>/dev/null;then THREAD=2;
-				elif [ $T -gt 45 ] 2>/dev/null;then THREAD=45;
+				elif [ $T -gt 400 ] 2>/dev/null;then THREAD=400;
 				else
 					THREAD=$T
 				fi
