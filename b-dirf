@@ -1,11 +1,11 @@
 #!/bin/bash
 
-VERSSION="(\033[33;1mv1.0.0\033[0m)"
+VERSSION="(\033[33;1mv1.0.1\033[0m)"
 URL=$1
 WORDLIST="$HOME/.b-dirf/.wl/wl.txt"
 S="/"
 LEN=$((${#URL} + 35))
-THREAD=8
+THREAD=80
 COUNT=0
 COUNT2=0
 RECURSIVE="No"
@@ -13,6 +13,8 @@ WL2="No"
 NUMs=0.08
 Banner="TRUE"
 DEF="Yes"
+ALL=000
+
 
 # colors
 U="\033[4m"
@@ -31,17 +33,17 @@ if [ ${URL: -1} = "/" ] 2>/dev/null;then echo -n "";else URL=$URL"/";fi
 
 # check connection
 function check_connection(){
-	printf "\n(${R}Target${N})     : ${URL}" 2>/dev/null
-	printf "\n(${R}Thread${N})     : ${THREAD}"
-	printf "\n(${R}Recursive${N})  : ${RECURSIVE}"
-	printf "\n(${R}Wordlist${N})   : ${WL2}"
+	printf "\n(${R}Target${N})      : ${URL}" 2>/dev/null
+	printf "\n(${R}Thread${N})      : ${THREAD}"
+	printf "\n(${R}Recursive${N})   : ${RECURSIVE}"
+	printf "\n(${R}Wordlist${N})    : ${WL2}"
 	#printf "(Status): %-$((${LEN} - 0))s" "${URL}"
-	printf "\n(${R}Host status${N}):"
+	printf "\n(${R}Host status${N}) :"
 	wget -q --spider $URL 2>/dev/null;
 	if [ $? -eq 0 ];then
-		printf "(${G}UP${N})\n\n"
+		printf " (${G}UP${N})\n\n"
 	else
-		printf "(${R}DOWN${N})\n"
+		printf " (${R}DOWN${N})\n"
 		exit 1
 	fi
 }
@@ -49,27 +51,27 @@ function check_connection(){
 ./setup.sh 2>/dev/null
 # Ping
 function Ping(){
-	$(wget -q --spider $URL$i 2>/dev/null)
-   if [ $? -eq 0 ];then
-      Type="file"
-		$(wget -q --spider $URL$i$S 2>/dev/null);
-      if [ $? -eq 0 ];then
-         Type="dir"
-		COUNT=$(($COUNT - 1))
-      fi
-      if [ $Type = "file" ];then
-         printf "\r(${G}+${N})Found\a: %-${LEN}s (${Y}File${N})\r\n" "${URL}${i}"
-      fi
-      if [ $Type = "dir" ];then
-         printf "\r(${G}+${N})Found\a: %s${B}%s${N}%-$(($LEN - $((${#URL} + ${#i} + 1 ))))s${N} (${Y}Dir${N})\r\n" "${URL}" "${i}""${S}"
-			if [ $RECURSIVE = "Yes" ];then
-				URL=$URL$i$S
-				recursive&
+	a=$(curl -o /dev/null --silent --head --write-out '%{http_code}' "$URL${i}")
+   if [ $a -ne $ALL ] 2>/dev/null;then
+      COUNT=$(($COUNT - 1))
+      if [ $a -ne 404 ];then
+   		if [ $a -eq 301 ];then
+				Type="Dir ";col=${B};sl="/";
+			elif [ $a -eq 200 ];then
+				col=${N};sl="";Type="File";
+			elif [ $a -eq 000 ];then
+				col=${N};sl="";Type=" -- ";
 			fi
+      	printf "\r(${G}+${N})\aFound(${SB}$Type${N}): (${Y}$a${N}) %-s${col}%-s${N}\r\n" "${URL}" "${i}${sl}"
       fi
-	fi
+      if [ $RECURSIVE = "Yes" ];then
+         if [ $a -eq 301 ];then
+            URL=$URL$i$S
+            recursive&
+			fi
+		fi
+   fi
 }
-
 function About(){
 	printf "
 ${R}Name${N}    : b-dirf
@@ -85,7 +87,7 @@ function brout_fource1(){
 		Ping &
 		#printf "\r${R}~> ${N}${URL}${P}%-$(($LEN + 7))s${N}\r" "${i}"&i
 		if [ ${#i} -lt $LEN ] 2>/dev/null;then
-			printf "\r(${P}Processing${N}) : $W%-${LEN}s${N}" "${i}"
+			printf "\r(${P}Processing${N})  : (${R}404${N}) $W%-${LEN}s${N}" "${i}"
 		fi
 		if [ $COUNT -gt $THREAD ];then
 			wait -n 1
@@ -110,21 +112,32 @@ function recursive(){
 
 # Help
 function Help(){
-	printf "> Files & Directory bruteforcer
+	printf "\n> Files & Directory bruteforcer
 
-${R}Usage${N}: b-dirf <URL> [[-h][-r][-t=20][-w=/path/wordlist][-q][-n]]
+${R}Usage${N}: b-dirf <URL> [<ARUMENT>] [<ARUMENT>] ...
 
 ${U}${P}Arguments${N}                          ${U}${P}Discription${N}
     
-  -a         --about               About
+  -a         --all                 All status except (404)
   -h         --help                This banner
-  -r         --recursive           Recursive mode
+  -r         --recursive           Recursive mode${R}*${N}
   -t=<int>   --thread=<int>        Number of threads
                                    default is $THREAD
   -w=<path>  --wordlist=<path>     Specify wordlist with path
   -q         --quite               Start without banner
   -n         --no-default          Run without default wordlist
-                                   use with -w\n"
+                                   use with -w
+  -A         --about               About
+  
+${R}Eg${N}:
+   b-dirf https://example.com
+   b-dirf https://example.com -t=100                          # Thread size
+   b-dirf https://example.com --wordlist=/path/wordlist.txt   # Add Wordlist
+   b-dirf https://example.com -w=/path/wordlist.txt -n        # Only Wordlist
+
+${R}Indication${N}:
+  ${R}*${N} tiny-bug\n"
+
 	exit 1
 }
 
@@ -189,8 +202,10 @@ for j in $@;do
 			Banner="FALSE";;
 		-n|--no-default)
 			DEF="No";;
-		-a|--about)
+		-A|--about)
 			About;exit 1;;
+		-a|--all)
+			ALL=404;;
 	esac
 done
 function banner(){	
