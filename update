@@ -1,2 +1,2 @@
 #!/bin/bash
-git pull | sudo git pull
+printf "\033[32m$(git pull || sudo git pull 2>/dev/null)\033[0m\n"
