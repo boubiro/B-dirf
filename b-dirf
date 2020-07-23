@@ -14,7 +14,7 @@ NUMs=0.08
 Banner="TRUE"
 DEF="Yes"
 ALL=000
-
+VERBOSE="FALSE"
 
 # colors
 U="\033[4m"
@@ -31,14 +31,16 @@ SB="\033[36m"
 # checking slash
 if [ ${URL: -1} = "/" ] 2>/dev/null;then echo -n "";else URL=$URL"/";fi
 
+# rm .tmp_bdirf
+if [ -f .tmp_bdirf ] 2>/dev/null;then rm .tmp_bdirf;fi
+
 # check connection
 function check_connection(){
-	printf "\n(${R}Target${N})      : ${URL}" 2>/dev/null
-	printf "\n(${R}Thread${N})      : ${THREAD}"
-	printf "\n(${R}Recursive${N})   : ${RECURSIVE}"
-	printf "\n(${R}Wordlist${N})    : ${WL2}"
-	#printf "(Status): %-$((${LEN} - 0))s" "${URL}"
-	printf "\n(${R}Host status${N}) :"
+	printf "\n(${R}Target${N})     : ${URL}" 2>/dev/null
+	printf "\n(${R}Thread${N})     : ${THREAD}"
+	printf "\n(${R}Recursive${N})  : ${RECURSIVE}"
+	printf "\n(${R}Wordlist${N})   : ${WL2}"
+	printf "\n(${R}Host status${N}):"
 	wget -q --spider $URL 2>/dev/null;
 	if [ $? -eq 0 ];then
 		printf " (${G}UP${N})\n\n"
@@ -46,23 +48,26 @@ function check_connection(){
 		printf " (${R}DOWN${N})\n"
 		exit 1
 	fi
+	curl --head ${URL} 2>/dev/null
 }
 
 ./setup.sh 2>/dev/null
 # Ping
 function Ping(){
-	a=$(curl -o /dev/null --silent --head --write-out '%{http_code}' "$URL${i}")
+	a=$(curl $URL${i} -o /dev/null --silent --head --write-out '%{http_code}')
    if [ $a -ne $ALL ] 2>/dev/null;then
       COUNT=$(($COUNT - 1))
       if [ $a -ne 404 ];then
    		if [ $a -eq 301 ];then
-				Type="Dir ";col=${B};sl="/";
+				Type="Dir";col=${B};sl="/";
+			elif [ $a -eq 302 ];then
+				Type="Dir";col=${B};sl="/";
 			elif [ $a -eq 200 ];then
-				col=${N};sl="";Type="File";
+				col=${N};sl="";Type=" - ";
 			else
-				col=${N};sl="";Type=" -- ";
+				col=${N};sl="";Type=" - ";
 			fi
-      	printf "\r(${G}+${N})\aFound(${SB}$Type${N}): (${Y}$a${N}) %-s${col}%-s${N}\r\n" "${URL}" "${i}${sl}"
+      	printf "\r(${G}+${N})\aFound(${SB}$Type${N}): (${Y}$a${N}) %-s${col}%-s${N}\r\n" "${URL}" "${i}${sl}"&& if [ $VERBOSE = "TRUE" ];then echo "${URL}${i}" >> .tmp_bdirf;fi
       fi
       if [ $RECURSIVE = "Yes" ];then
          if [ $a -eq 301 ];then
@@ -75,7 +80,7 @@ function Ping(){
 function About(){
 	printf "
 ${R}Name${N}    : b-dirf
-${R}Verssion${N}: ${VERSSION}
+${R}Version${N} : ${VERSSION}
 ${R}Script${N}  : bash
 ${R}Author${N}  : Madhava
 ${R}Org${N}     : Black-widow-z
@@ -85,9 +90,9 @@ ${R}Org${N}     : Black-widow-z
 function brout_fource1(){
 	for i in $(cat ${WORDLIST});do
 		Ping &
-		#printf "\r${R}~> ${N}${URL}${P}%-$(($LEN + 7))s${N}\r" "${i}"&i
-		if [ ${#i} -lt $LEN ] 2>/dev/null;then
-			printf "\r(${P}Processing${N})  : (${R}404${N}) $W%-${LEN}s${N}" "${i}"
+		LEN3=$(($LEN - 20))
+		if [ ${#i} -lt $LEN3 ] 2>/dev/null;then
+			printf "\r(${P}Processing${N}) : (${R}404${N}) $W%-${LEN3}s${N}" "${i}"
 		fi
 		if [ $COUNT -gt $THREAD ];then
 			wait -n 1
@@ -110,6 +115,10 @@ function recursive(){
 	wait
 }
 
+function Verbose(){
+	printf "${R}[URL]${N}${Y} $i${SB}\n|_____________${N}\n" 2>/dev/null;curl -I $i
+}
+
 # Help
 function Help(){
 	printf "\n> Files & Directory bruteforcer
@@ -123,6 +132,7 @@ ${U}${P}Arguments${N}                          ${U}${P}Discription${N}
   -r         --recursive           Recursive mode${R}*${N}
   -t=<int>   --thread=<int>        Number of threads
                                    default is $THREAD
+  -v         --verbose             Show hedder for all possible status
   -w=<path>  --wordlist=<path>     Specify wordlist with path
   -q         --quite               Start without banner
   -n         --no-default          Run without default wordlist
@@ -145,8 +155,9 @@ ${R}Indication${N}:
 function brout_fource2(){
 	for i in $(cat ${WORDLIST2} 2>/dev/null);do
 		Ping &
-		if [ ${#i} -lt $LEN ] 2>/dev/null;then
-			printf "\r(${P}Processing${N}) : $W%-${LEN}s${N}" "${i}"
+		LEN3=$(($LEN - 20))
+		if [ ${#i} -lt $LEN3 ] 2>/dev/null;then
+			printf "\r(${P}Processing${N}) : (${R}404${N}) $W%-${LEN3}s${N}" "${i}"
 		fi
 		if [ $COUNT -gt $THREAD ];then
 			wait -n 1
@@ -154,7 +165,7 @@ function brout_fource2(){
 		fi
 		COUNT=$(($COUNT + 2))
 	done
-	wait;sleep 8
+	wait;sleep 5
 	printf "\r(${G}Wordlist Fineshed${N})%-38s\r\n\n"
 }
 
@@ -177,6 +188,8 @@ for j in $@;do
 					printf "(${R}!${N})No such a file \"${WORDLIST2}\". try --help\n";exit 1
 				fi
 			fi;;
+		-v|--verbose)
+			VERBOSE="TRUE";;
 		-w|--wordlist)
 			printf "${SB}--wordlist=${N}/path/wordlist.txt\n";exit 1;;
 		-t=*|--thread=*)
@@ -223,6 +236,7 @@ check_connection
 if [ $WL2 = "Yes" ];then
 	if [ $DEF = "No" ];then
 		brout_fource2
+		printf ""
 	else
 		brout_fource1&brout_fource2
 	fi
@@ -230,3 +244,12 @@ if [ $WL2 = "Yes" ];then
 else
 	if [ $DEF = "Yes" ];then brout_fource1;fi
 fi
+
+if [ $VERBOSE = "TRUE" ];then
+	for i in $(cat .tmp_bdirf 2>/dev/null);do 
+		Verbose&
+		wait
+	done
+	rm .tmp_bdirf 2>/dev/null
+fi
+echo
