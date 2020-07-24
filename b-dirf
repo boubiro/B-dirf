@@ -15,7 +15,7 @@ Banner="TRUE"
 DEF="Yes"
 ALL=000
 VERBOSE="FALSE"
-
+STA="\033[32mPinged\033[0m"
 # colors
 U="\033[4m"
 B="\033[34;1m"
@@ -128,7 +128,7 @@ ${R}Usage${N}: b-dirf <URL> [<ARUMENT>] [<ARUMENT>] ...
 ${U}${P}Arguments${N}                          ${U}${P}Discription${N}
     
   -a         --all                 All status except (404)
-  -h         --help                This banner
+  -h         --help                Print thid is banner and exit
   -r         --recursive           Recursive mode${R}*${N}
   -t=<int>   --thread=<int>        Number of threads
                                    default is $THREAD
@@ -137,6 +137,10 @@ ${U}${P}Arguments${N}                          ${U}${P}Discription${N}
   -q         --quite               Start without banner
   -n         --no-default          Run without default wordlist
                                    use with -w
+  -s         --spider              Print HEAD and exit
+  -S         --spider-all          Print HEDA, body and exit
+  -p         --ping                Ping to get status code and exit
+  -p=<int>   --ping=<int>          Ping <int> times and exit
   -A         --about               About
   
 ${R}Eg${N}:
@@ -198,15 +202,15 @@ for j in $@;do
 				printf "${SB}--thread=${N}<number>\n";exit 1
 				TC="FALSE"
 			fi
-			for k in $(seq 0 2000);do if [ $T -eq $k ] 2>/dev/null;then TC="TRUE";break;fi;done		
+			for k in $(seq 0 10000);do if [ $T -eq $k ] 2>/dev/null;then TC="TRUE";break;fi;done		
 			if [ $TC = "TRUE" ] 2>/dev/null;then
 				if [ $T -le 2 ] 2>/dev/null;then THREAD=2;
-				elif [ $T -gt 800 ] 2>/dev/null;then THREAD=400;
+				elif [ $T -gt 800 ] 2>/dev/null;then THREAD=800;
 				else
 					THREAD=$T
 				fi
 			else
-				printf "(${R}!${N})Integer required.\n";exit 1
+				printf "(${R}!${N})Positive Integer required.\n";exit 1
 			fi;;
 
 		-t|--thread)
@@ -219,6 +223,35 @@ for j in $@;do
 			About;exit 1;;
 		-a|--all)
 			ALL=404;;
+		-s|--spider)
+			curl $URL -I 2>/dev/null;exit 1;;
+		-S|--spider-all)
+			curl $URL -I 2>/dev/null;curl $URL 2>/dev/null;exit 1;;
+		-p|--ping)
+			Get=$(curl $URL -o /dev/null --silent --head --write-out "%{http_code}" 2>/dev/null)
+			if [ $Get -eq 0 ] 2>/dev/null;then STA="${R}Failed${N}";fi
+			printf "(${P}Ping${N}): 1 $URL  ${Y}Status${N}: ${Get} [$STA]\n";exit 1;;
+		-p=*|--ping=*)
+			PI="${j##*\=}"
+			if [ $PI == $ZZZZ ] 2>/dev/null;then
+				printf "${SB}--ping=${N}<number>\n";exit 1
+				PC="FALSE"
+			fi
+			for k in $(seq 0 2000);do if [ $PI -eq $k ] 2>/dev/null;then PC="TRUE";break;fi;done
+			if [ $PC = "TRUE" ] 2>/dev/null;then
+				if [ $PI -le 1 ] 2>/dev/null;then N=1;fi
+			else
+				printf "(${R}!${N})Positive Integer required.\n";exit 1
+			fi
+			for i in $(seq 1 $PI);do
+				Get=$(curl $URL -o /dev/null --silent --head --write-out "%{http_code}" 2>/dev/null)
+				if [ $Get -eq 0 ] 2>/dev/null;then STA="${R}Failed${N}";fi
+				printf "(${P}Ping${N}): %2d $URL  ${Y}Status${N}: ${Get} [$STA]\n" "$i";
+			done
+			exit 1
+			;;
+
+
 	esac
 done
 function banner(){	

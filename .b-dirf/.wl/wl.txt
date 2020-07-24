@@ -1,3 +1,6 @@
+robote.txt
+robotes.txt
+robot.txt
 !
 !_archives
 !_images
