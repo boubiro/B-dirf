@@ -14,6 +14,12 @@ File directory bruteforcing
 
 ```$ b-dirf https://demo.com/```
 
+```$ b-dirf https://demo.com/ --spider```
+
+```$ b-dirf https://demo.com/ --ping  ```
+
+```$ b-dirf https://demo.com/ --no-default --wordlist=path/path/wordlist.txt```
+
 ## ORG:
 
 https://github.com/RED-5-CRACKERS
